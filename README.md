@@ -145,10 +145,10 @@ docker service logs mc_minecraft
 ```
 🛠️ Troubleshooting
 Issue	Solution
-Connection refused	Check firewall: sudo ufw allow 25565/tcp
-Permission denied on NFS	Run: sudo chown -R 1000:1000 /mnt/mc-data
-Server not starting	Check EULA: echo "eula=true" > /mnt/mc-data/eula.txt
-High latency	Reduce view-distance in server.properties
+Connection refused	Check firewall: sudo ufw allow 25565/tcp .
+Permission denied on NFS	Run: sudo chown -R 1000:1000 /mnt/mc-data .
+Server not starting	Check EULA: echo "eula=true" > /mnt/mc-data/eula.txt .
+High latency	Reduce view-distance in server.properties .
 📈 Performance Tips
 Allocate more RAM by modifying MEMORY in stack file (e.g., "4G")
 
