@@ -32,7 +32,7 @@ docker swarm join-token worker -q
 echo "Installation du volume partagé"
 sudo apt install nfs-kernel-server -y
 sudo mkdir -p /mnt/mc-data
-sudo chown nobody:nogroup /mnt/mc-data
+sudo chown 1000:1000 /mnt/mc-data
 
 echo "/mnt/mc-data *(rw,sync,no_subtree_check)" | sudo tee -a /etc/exports
 sudo exportfs -a
