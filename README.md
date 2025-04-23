@@ -97,17 +97,16 @@ services:
       MEMORY: "2G"
       LEVEL: "world"
       SEED: "default"  # Change for custom world
-      TYPE: "PAPER"
-      VERSION: "1.20.1"
-      ONLINE_MODE: "FALSE"  # For local networks
+      TYPE: "VANILLA" # Change for custom type like PAPER, see documentation
+      VERSION: "1.20.1" #Change the server version
     volumes:
-      - mc-data:/data
+      - /mnt/mc-data:/data
 
 volumes:
   mc-data:
     driver_opts:
       type: "nfs"
-      o: "addr=<MANAGER_IP>,rw,nolock,soft"
+      o: "addr=<MANAGER_IP>,rw"
       device: ":/mnt/mc-data"
 ```
 ### Deploy the stack:
