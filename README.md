@@ -43,10 +43,16 @@ curl -O https://raw.githubusercontent.com/Kyrozn/ClusterDockerMinecraft/main/sta
 ```bash
 chmod +x master_config.sh
 ```
+  start the script, and verify all is ok
+```bash
+./master_config
+```
   Connect in worker node and download the file worker_config and set permission
 ```bash
 curl -O https://raw.githubusercontent.com/Kyrozn/ClusterDockerMinecraft/main/worker_config.sh
-chmod +x master_config.sh
+chmod +x worker_config.sh
+#complete information required during execution
+./worker_config
 ```
 
 or config manualy with the next tuto 
