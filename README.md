@@ -61,7 +61,7 @@ sudo apt install nfs-kernel-server -y
 sudo mkdir -p /mnt/mc-data
 sudo chown 1000:1000 /mnt/mc-data  # Match container user
 
-echo "/mnt/mc-data *(rw,sync,no_subtree_check,no_root_squash)" | sudo tee -a /etc/exports
+echo "/mnt/mc-data *(rw,sync,no_subtree_check)" | sudo tee -a /etc/exports
 sudo exportfs -a
 sudo systemctl restart nfs-kernel-server
 ```
