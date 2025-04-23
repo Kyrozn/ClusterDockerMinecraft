@@ -33,7 +33,7 @@ This project enables the deployment of a scalable Minecraft server cluster using
 - NFS client on workers
 
 ## 🧰 Installation Guide
-
+You can use the file in the repository or config manualy with the next tuto 
 ### 1. System Preparation
 
 ```bash
@@ -169,14 +169,3 @@ sudo mkdir -p /backups/minecraft
 sudo tar -czf /backups/minecraft/world-$(date +%Y%m%d).tar.gz -C /mnt/mc-data world/
 ```
 💡 Schedule daily backups with cron: 0 3 * * * root /path/to/backup-script.sh
-
-📚 Resources
-Docker Swarm Documentation
-
-itzg Minecraft Server Image
-
-PaperMC Documentation
-
-NFS Server Guide
-
-🔐 Default Credentials
