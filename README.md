@@ -33,7 +33,23 @@ This project enables the deployment of a scalable Minecraft server cluster using
 - NFS client on workers
 
 ## 🧰 Installation Guide
-You can use the file in the repository or config manualy with the next tuto 
+You can use the file in the repository
+  Connect in manager node and download the file master_config and stack_minecraft
+```bash
+curl -O https://raw.githubusercontent.com/Kyrozn/ClusterDockerMinecraft/main/master_config.sh
+curl -O https://raw.githubusercontent.com/Kyrozn/ClusterDockerMinecraft/main/stack_minecraft.yaml
+```
+  set the permission for the file to be executed
+```bash
+chmod +x master_config.sh
+```
+  Connect in worker node and download the file worker_config and set permission
+```bash
+curl -O https://raw.githubusercontent.com/Kyrozn/ClusterDockerMinecraft/main/worker_config.sh
+chmod +x master_config.sh
+```
+
+or config manualy with the next tuto 
 ### 1. System Preparation
 
 ```bash
