@@ -145,23 +145,12 @@ docker service logs mc_minecraft
 ```
 🛠️ Troubleshooting
 Issue	Solution
-Connection refused	Check firewall: sudo ufw allow 25565/tcp .
-Permission denied on NFS	Run: sudo chown -R 1000:1000 /mnt/mc-data .
-Server not starting	Check EULA: echo "eula=true" > /mnt/mc-data/eula.txt .
-High latency	Reduce view-distance in server.properties .
-📈 Performance Tips
-Allocate more RAM by modifying MEMORY in stack file (e.g., "4G")
+Connection refused	Check firewall: sudo ufw allow 25565/tcp 
+Permission denied on NFS	Run: sudo chown -R 1000:1000 /mnt/mc-data 
+Server not starting	Check EULA: echo "eula=true" > /mnt/mc-data/eula.txt 
+High latency	Reduce view-distance in server.properties 
 
-Use PaperMC optimizations by adding these environment variables:
-
-```yaml
-environment:
-  PAPERMC_OPTIMIZATIONS: "true"
-  VIEW_DISTANCE: "6"
-```
-Pre-generate chunks using Chunky plugin to reduce lag
-
-🔄 Backup Strategy
+🔄 Backup Strategy (Optional)
 ```bash
 # On manager node:
 sudo mkdir -p /backups/minecraft
