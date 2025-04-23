@@ -1,71 +1,89 @@
-# ClusterDockerMinecraft
-Cluster Minecraft avec Docker Swarm
-Guide d'installation et de configuration
-📋 Vue d'ensemble
-Ce projet permet de déployer plusieurs serveurs Minecraft dans un cluster Docker Swarm avec:
-Une seed commune pour que les mondes soient identiques
-Un volume de données partagé pour que les joueurs retrouvent leurs données
-Possibilité d'ajouter facilement de nouveaux serveurs via des Workers
-🧾 Objectif
-Permettre à plusieurs conteneurs Minecraft de partager le même monde et les mêmes données (inventaires, stats, etc.) à travers plusieurs machines grâce à Docker Swarm, tout en gardant une seed identique.
-📦 Prérequis
-1 VM Manager
-2+ VM Workers
-Docker installé sur chaque VM
-Swarm initialisé
-Un volume partagé (par NFS ou GlusterFS)
-🔧 Étapes d'installation
-1. Installer Docker sur toutes les machines
-Tu peux utiliser ce script shell sur chaque VM :
-#!/bin/bash
+ClusterDockerMinecraft - Enhanced Documentation
+Minecraft Cluster Docker Swarm NFS Storage
+
+🌟 Overview
+This project enables the deployment of a scalable Minecraft server cluster using Docker Swarm, featuring:
+
+Shared world generation through identical seeds
+
+Persistent player data across all servers via shared NFS storage
+
+Easy horizontal scaling to accommodate more players
+
+High availability with automatic failover
+
+🚀 Key Features
+Feature	Benefit
+Shared NFS Volume	Consistent world and player data across all instances
+PaperMC Server	Improved performance over vanilla Minecraft
+Host Networking	Simplified network configuration
+Portainer Integration	Visual cluster management
+Auto-restart Policy	High availability
+🛠️ Prerequisites
+Hardware Requirements
+1 Manager VM (2GB RAM minimum)
+
+2+ Worker VMs (1GB RAM each minimum)
+
+20GB shared storage (for world data)
+
+Software Requirements
+Ubuntu 20.04/22.04 on all nodes
+
+Docker installed on all machines
+
+NFS server on manager
+
+NFS client on workers
+
+🧰 Installation Guide
+1. System Preparation
+bash
+# On ALL nodes (manager and workers):
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y docker.io docker-compose
-sudo systemctl enable docker
-sudo systemctl start docker
+sudo systemctl enable --now docker
+2. Initialize Docker Swarm
+bash
+# ONLY on manager node:
+docker swarm init --advertise-addr <MANAGER_IP>
+3. Join Worker Nodes
+bash
+# On EACH worker node:
+docker swarm join --token <SWARM_TOKEN> <MANAGER_IP>:2377
+💡 Get the join token with docker swarm join-token worker on the manager
 
-2. Initialiser le Swarm (sur le manager uniquement)
-docker swarm init --advertise-addr <IP_MANAGER>
-
-Note : remplace <IP_MANAGER> par l'adresse IP de la machine manager.
-3. Ajouter les Workers au cluster
-Depuis les Workers :
-docker swarm join --token <TOKEN> <IP_MANAGER>:2377
-
-Récupère le token avec docker swarm join-token worker sur le manager.
-4. Configurer un volume partagé (NFS recommandé)
-Sur le manager :
+4. Configure Shared NFS Storage
+On Manager:
+bash
 sudo apt install nfs-kernel-server -y
 sudo mkdir -p /mnt/mc-data
-sudo chown nobody:nogroup /mnt/mc-data
+sudo chown 1000:1000 /mnt/mc-data  # Match container user
 
-Ajouter dans /etc/exports :
-/mnt/mc-data *(rw,sync,no_subtree_check)
-
-Puis :
+echo "/mnt/mc-data *(rw,sync,no_subtree_check,no_root_squash)" | sudo tee -a /etc/exports
 sudo exportfs -a
 sudo systemctl restart nfs-kernel-server
-
-Sur les workers :
+On Workers:
+bash
 sudo apt install nfs-common -y
 sudo mkdir -p /mnt/mc-data
-sudo mount <IP_MANAGER>:/mnt/mc-data /mnt/mc-data
+echo "<MANAGER_IP>:/mnt/mc-data /mnt/mc-data nfs defaults 0 0" | sudo tee -a /etc/fstab
+sudo mount -a
+5. Deploy Minecraft Stack
+Create stack-minecraft.yml:
 
-⚠️ Important : Pour rendre ça persistant au reboot, tu peux modifier /etc/fstab en ajoutant :
-<IP_MANAGER>:/mnt/mc-data /mnt/mc-data nfs defaults 0 0
-
-5. Fichier stack Minecraft pour Swarm
-Crée un fichier stack-minecraft.yml :
+yaml
 version: "3.8"
 
 services:
   minecraft:
-    image: itzg/minecraft-server
+    image: itzg/minecraft-server:java17
     deploy:
       replicas: 2
       restart_policy:
         condition: any
       placement:
-        max_replicas_per_node: 1
+        constraints: [node.role==worker]
     ports:
       - target: 25565
         published: 25565
@@ -73,10 +91,12 @@ services:
         mode: host
     environment:
       EULA: "TRUE"
-      MEMORY: 2G
+      MEMORY: "2G"
       LEVEL: "world"
-      SEED: "ma-super-seed" # facultatif
-      TYPE: PAPER # plus performant que vanilla
+      SEED: "default"  # Change for custom world
+      TYPE: "PAPER"
+      VERSION: "1.20.1"
+      ONLINE_MODE: "FALSE"  # For local networks
     volumes:
       - mc-data:/data
 
@@ -84,30 +104,15 @@ volumes:
   mc-data:
     driver_opts:
       type: "nfs"
-      o: "addr=<IP_MANAGER>,rw"
+      o: "addr=<MANAGER_IP>,rw,nolock,soft"
       device: ":/mnt/mc-data"
+Deploy the stack:
 
-6. Déployer la stack
-docker stack deploy -c stack-minecraft.yml mc-cluster
-
-🧪 Tester
-Connecte-toi à l'IP de n'importe quelle VM avec le port 25565
-Tu seras redirigé vers un des serveurs selon les règles de Swarm
-Les données sont partagées, donc ton monde et ton inventaire sont toujours là
-🛠️ Dépannage
-Problèmes d'accès au volume partagé
-Vérifiez les logs avec :
-docker service logs mc-cluster_minecraft
-
-Si vous rencontrez des problèmes de permission :
-sudo chmod -R 777 /mnt/mc-data
-
-Problèmes de connexion au serveur
-Vérifiez que le port 25565 est ouvert sur les VM :
-sudo ufw allow 25565/tcp
-
-📈 Bonus : Monitoring avec Portainer
-Sur le manager :
+bash
+docker stack deploy -c stack-minecraft.yml mc
+🔍 Monitoring
+Portainer Setup (Optional)
+bash
 docker volume create portainer_data
 docker run -d -p 9000:9000 \
   --name portainer \
@@ -115,29 +120,54 @@ docker run -d -p 9000:9000 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v portainer_data:/data \
   portainer/portainer-ce
+Access at: http://<MANAGER_IP>:9000
 
-Accès : http://<IP_MANAGER>:9000
-🔄 Mise à l'échelle
-Pour ajouter plus de serveurs Minecraft :
-docker service scale mc-cluster_minecraft=3
+⚙️ Operations
+Scaling Servers
+bash
+# Scale up
+docker service scale mc_minecraft=3
 
-🎉 Résultat
-Tu as un cluster Minecraft avec plusieurs conteneurs
-Le monde est commun grâce au volume partagé
-Les données sont partagées
-Tu peux ajouter un nouveau Worker et augmenter les replicas facilement
-📝 Notes supplémentaires
-Cette configuration utilise le mode réseau host pour éviter les problèmes de NAT entre les conteneurs
-Le plugin Paper est utilisé pour de meilleures performances
-Portainer permet une gestion graphique du cluster
-📚 Ressources
-Documentation Docker Swarm
-Image Docker Minecraft
-Documentation NFS
-User = master
-Psw Vm Master = MinecraftInfra
-User = worker1
-Psw Vm worker1 = MinecraftInfra
+# Scale down
+docker service scale mc_minecraft=2
+Checking Status
+bash
+# List services
+docker service ls
 
-pour ajouter un worker au swarm 👍
-docker swarm join --token SWMTKN-1-2cksa9a0zip2t3al1wng4kjsdcfa9ee78zmac04amjxtx3d1g6-cjypqq7tk1utzl2oty5l7z0ja 192.168.5.10:2377
+# View logs
+docker service logs mc_minecraft
+🛠️ Troubleshooting
+Issue	Solution
+Connection refused	Check firewall: sudo ufw allow 25565/tcp
+Permission denied on NFS	Run: sudo chown -R 1000:1000 /mnt/mc-data
+Server not starting	Check EULA: echo "eula=true" > /mnt/mc-data/eula.txt
+High latency	Reduce view-distance in server.properties
+📈 Performance Tips
+Allocate more RAM by modifying MEMORY in stack file (e.g., "4G")
+
+Use PaperMC optimizations by adding these environment variables:
+
+yaml
+environment:
+  PAPERMC_OPTIMIZATIONS: "true"
+  VIEW_DISTANCE: "6"
+Pre-generate chunks using Chunky plugin to reduce lag
+
+🔄 Backup Strategy
+bash
+# On manager node:
+sudo mkdir -p /backups/minecraft
+sudo tar -czf /backups/minecraft/world-$(date +%Y%m%d).tar.gz -C /mnt/mc-data world/
+💡 Schedule daily backups with cron: 0 3 * * * root /path/to/backup-script.sh
+
+📚 Resources
+Docker Swarm Documentation
+
+itzg Minecraft Server Image
+
+PaperMC Documentation
+
+NFS Server Guide
+
+🔐 Default Credentials
