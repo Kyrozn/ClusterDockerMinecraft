@@ -113,7 +113,7 @@ volumes:
 ### Deploy the stack:
 
 ```bash
-docker stack deploy -c stack-minecraft.yml mc
+docker stack deploy -c stack-minecraft.yml mc_cluster
 ```
 🔍 Monitoring
 Portainer Setup (Optional)
