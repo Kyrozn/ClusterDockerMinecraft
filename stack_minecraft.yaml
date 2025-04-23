@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  minecraft:
+    image: itzg/minecraft-server:java17
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role==worker]
+    ports:
+      - target: 25565
+        published: 25565
+        protocol: tcp
+        mode: host
+    environment:
+      EULA: "TRUE"
+      MEMORY: "2G"
+      LEVEL: "world"
+      SEED: "default"  # Change for custom world
+      TYPE: "VANILLA" # Change for custom type like PAPER, see documentation
+      VERSION: "1.20.1" #Change the server version
+    volumes:
+      - /mnt/mc-data:/data
+
+volumes:
+  mc-data:
+    driver_opts:
+      type: "nfs"
+      o: "addr=<MANAGER_IP>,rw"
+      device: ":/mnt/mc-data"
