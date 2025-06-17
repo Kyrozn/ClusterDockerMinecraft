@@ -6,7 +6,7 @@ sudo apt update && sudo apt upgrade -y
 
 # Obtenir l'adresse IP de la machine
 echo "Récupération de l'adresse IP de la machine..."
-ip=$(ip -4 addr show ens33 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+ip=$(hostname -I | awk '{print $1}')
 echo "Adresse IP de la machine veuillez la noter quelque part: $ip"
 
 # Installer Docker
