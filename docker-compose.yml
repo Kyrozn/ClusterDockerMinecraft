@@ -1,0 +1,166 @@
+version: "3.8"
+
+services:
+  minecraft-primary:
+    image: itzg/minecraft-server:java17
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == workerserver
+      restart_policy:
+        condition: any
+    ports:
+      - target: 25565
+        published: 25565
+        protocol: tcp
+        mode: host
+    environment:
+      EULA: "TRUE"
+      MEMORY: "2G"
+      LEVEL: "world"
+      SEED: "default"
+      TYPE: "VANILLA"
+      VERSION: "1.20.1"
+      DISABLE_SESSION_LOCK: "true"
+      SYNC_SKIP_NEWER_IN_DEST: "true"
+      OVERRIDE_SERVER_PROPERTIES: "true"
+      INITIAL_DELAY: "30"  # Délai pour éviter les conflits initiaux
+    volumes:
+      - mcWorld-data:/data
+    networks:
+      - mc_net
+
+  minecraft-backup:
+    image: itzg/minecraft-server:java17
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == workerserver2
+      restart_policy:
+        condition: any
+    environment:
+      EULA: "TRUE"
+      MEMORY: "2G"
+      LEVEL: "world"
+      SEED: "default"
+      TYPE: "VANILLA"
+      VERSION: "1.20.1"
+      DISABLE_SERVER: "true"  # Reste désactivé par défaut
+      DISABLE_SESSION_LOCK: "true"
+      SYNC_SKIP_NEWER_IN_DEST: "true"
+      INITIAL_DELAY: "300"  # Délai plus long pour le backup
+    volumes:
+      - mcMine-data:/data
+    networks:
+      - mc_net
+
+  haproxy:
+    image: haproxy:latest
+    ports:
+      - "25564:25565"  # Port Minecraft
+      - "8404:8404"    # Stats page
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - mc_net
+
+  mc-exporter:
+    image: itzg/mc-monitor:latest
+    command:
+      - "export-for-prometheus"
+      - "-port=9150"
+      - "-servers=$$MC_SERVER_IP:25565"
+    environment:
+      MC_SERVER_IP: "tasks.minecraft-primary"  # Surveille seulement le primaire
+    ports:
+      - target: 9150
+        published: 9150
+        protocol: tcp
+        mode: host
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.role == worker
+    networks:
+      - mc_net
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - mc_net
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - mc_net
+
+  node-exporter:
+    image: prom/node-exporter
+    deploy:
+      mode: global
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+    networks:
+      - mc_net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    deploy:
+      mode: global
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - mc_net
+
+volumes:
+  mc-data-1:
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.5.10,nolock,soft,rw,noacl,vers=4"
+      device: ":/mnt/mcWorld-data"
+  mc-data-2:
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.5.10,nolock,soft,rw,noacl,vers=4"
+      device: ":/mnt/mcMine-data"
+  prometheus-data:
+  grafana-data:
+
+networks:
+  mc_net:
+    driver: overlay
