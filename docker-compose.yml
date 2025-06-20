@@ -57,8 +57,9 @@ services:
   haproxy:
     image: haproxy:latest
     ports:
-      - "25564:25565"  # Port Minecraft
-      - "8404:8404"    # Stats page
+      - "25567:25565"  # Minecraft serveur principal
+      - "25568:25565"  # Minecraft serveur secondaire
+      - "8404:8404"    # Interface de stats
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
     deploy:
