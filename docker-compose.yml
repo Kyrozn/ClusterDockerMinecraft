@@ -152,12 +152,12 @@ volumes:
   mc-data-1:
     driver_opts:
       type: "nfs"
-      o: "addr=192.168.5.10,nolock,soft,rw,noacl,vers=4"
+      o: "addr=<IP_MANAGER>,nolock,soft,rw,noacl,vers=4"
       device: ":/mnt/mcWorld-data"
   mc-data-2:
     driver_opts:
       type: "nfs"
-      o: "addr=192.168.5.10,nolock,soft,rw,noacl,vers=4"
+      o: "addr=<IP_MANAGER>,nolock,soft,rw,noacl,vers=4"
       device: ":/mnt/mcMine-data"
   prometheus-data:
   grafana-data:
